@@ -48,7 +48,7 @@ function listName($id) {
 function setMessageData($msgid,$name,$value) {
   if ($name == 'PHPSESSID') return;
   if ($name == session_name()) return;
-  
+
   if ($name == 'targetlist' && is_array($value))  {
     Sql_query(sprintf('delete from %s where messageid = %d',$GLOBALS['tables']["listmessage"],$msgid));
     if ( !empty($value["all"]) || !empty($value["allactive"])) {
@@ -77,7 +77,7 @@ function setMessageData($msgid,$name,$value) {
   if (is_array($value) || is_object($value)) {
     $value = 'SER:'.serialize($value);
   }
-  
+
   Sql_Replace($GLOBALS['tables']['messagedata'], array('id' => $msgid, 'name' => $name, 'data' => $value), array('name', 'id'));
 #  print "<br/>setting $name for $msgid to $value";
 #  exit;
@@ -92,12 +92,12 @@ function loadMessageData($msgid) {
   if (empty($default['from'])) {
     $default['from'] = getConfig('admin_address');
   }
-   
+
   if (!isset($GLOBALS['MD']) || !is_array($GLOBALS['MD'])) {
     $GLOBALS['MD'] = array();
   }
   if (isset($GLOBALS['MD'][$msgid])) return $GLOBALS['MD'][$msgid];
-  
+
   ## when loading an old message that hasn't got data stored in message data, load it from the message table
   $prevMsgData = Sql_Fetch_Assoc_Query(sprintf('select * from %s where id = %d',
     $GLOBALS['tables']['message'],$msgid));
@@ -160,21 +160,21 @@ function loadMessageData($msgid) {
       $messagedata[stripslashes($row['name'])] = $data;
     }
   }
-  
+
   foreach (array('embargo','repeatuntil','requeueuntil') as $datefield) {
     if (!is_array($messagedata[$datefield])) {
       $messagedata[$datefield] = array('year' => date('Y'),'month' => date('m'),'day' => date('d'),'hour' => date('H'),'minute' => date('i'));
     }
   }
-  
+
   // Load lists that were targetted with message...
-  $result = Sql_Query(sprintf('select list.name,list.id 
+  $result = Sql_Query(sprintf('select list.name,list.id
     from '.$GLOBALS['tables']['listmessage'].' listmessage,'.$GLOBALS['tables']['list'].' list
      where listmessage.messageid = %d and listmessage.listid = list.id',$msgid));
   while ($lst = Sql_fetch_array($result)) {
     $messagedata["targetlist"][$lst["id"]] = 1;
   }
-  
+
   ## backwards, check that the content has a url and use it to fill the sendurl
   if (empty($messagedata['sendurl'])) {
 
@@ -210,16 +210,16 @@ function loadMessageData($msgid) {
   }
   $messagedata["fromname"] = trim($messagedata["fromname"]);
 
-  # erase double spacing 
+  # erase double spacing
   while (strpos($messagedata["fromname"],"  ")) {
     $messagedata["fromname"] = str_replace("  "," ",$messagedata["fromname"]);
   }
-  
+
   ## if the name ends up being empty, copy the email
   if (empty($messagedata["fromname"])) {
     $messagedata["fromname"] = $messagedata["fromemail"];
   }
-  
+
   if (isset($messagedata['targetlist']['unselect'])) {
     unset($messagedata['targetlist']['unselect']);
   }
@@ -239,7 +239,7 @@ function sendAdminPasswordToken ($adminId){
   $row = Sql_Fetch_Row_Query($SQLquery);
   $adminName = $row[0];
   $email = $row[1];
-  #Check if the token is not present in the database yet.  
+  #Check if the token is not present in the database yet.
   while(1){
     #Randomize the token to be encrypted and insert it into the db.
     $date = date("U"); $random = rand(1, $date);
@@ -391,11 +391,11 @@ function sendMailPhpMailer ($to,$subject,$message) {
     ## In the above phpMailer strips all tags, which removes the links which are wrapped in < and > by HTML2text
     ## so add it again
     $mail->add_text($textmessage);
-  } 
+  }
   $mail->add_text($textmessage);
   # 0008549: message envelope not passed to php mailer,
   $mail->Sender = $GLOBALS["message_envelope"];
-  
+
   ## always add the List-Unsubscribe header
   $removeurl = getConfig("unsubscribeurl");
   $sep = strpos($removeurl,'?') === false ? '?':'&';
@@ -409,7 +409,7 @@ function sendMailDirect($destinationemail, $subject, $message) {
   ## try to deliver directly, so that any error (eg user not found) can be sent back to the
   ## subscriber, so they can fix it
     unset($GLOBALS["developer_email"]);
-    
+
   list($htmlmessage,$textmessage) = constructSystemMail($message,$subject);
   $mail = new PHPlistMailer('systemmessage',$destinationemail,false,true);
 
@@ -427,7 +427,7 @@ function sendMailDirect($destinationemail, $subject, $message) {
   if (!empty($htmlmessage)) {
     $mail->add_html($htmlmessage,$textmessage,getConfig('systemmessagetemplate'));
     $mail->add_text($textmessage);
-  } 
+  }
   $mail->add_text($textmessage);
   try {
     $mail->Send('',$destinationemail, $fromname, $fromemail, $subject);
@@ -504,7 +504,7 @@ function cleanEmail ($value) {
   $value = str_replace('(','',$value);
   $value = str_replace(')','',$value);
   $value = preg_replace('/\.$/','',$value);
-  
+
   ## these are allowed in emails
 //  $value = preg_replace("/'/","&rsquo;",$value);
   $value = preg_replace("/`/","&lsquo;",$value);
@@ -577,7 +577,7 @@ function previewTemplate($id,$adminid = 0,$text = "", $footer = "") {
   if (empty($footer)) {
     $footer = getConfig('messagefooter');
   }
-  
+
   if ($footer) {
     $template = str_ireplace("[FOOTER]",$footer,$template);
   }
@@ -588,7 +588,7 @@ function previewTemplate($id,$adminid = 0,$text = "", $footer = "") {
   }
   $template = str_ireplace("[FROMEMAIL]",$fromemail,$template);
   $template = str_ireplace("[EMAIL]",'recipient@destination.com',$template);
-  
+
   $template = str_ireplace("[SUBJECT]",s('This is the Newsletter Subject'),$template);
   $template = str_ireplace("[UNSUBSCRIBE]",sprintf('<a href="%s">%s</a>',getConfig("unsubscribeurl"),$GLOBALS["strThisLink"]),$template);
   #0013076: Blacklisting posibility for unknown users
@@ -650,7 +650,9 @@ function system_messageHeaders($useremail = "") {
   else
     $additional_headers .= "Reply-To: $from_address\n";
   $v = VERSION;
-  $additional_headers .= "X-Mailer: phplist version $v (www.phplist.com)\n";
+  //chpock
+  //$additional_headers .= "X-Mailer: phplist version $v (www.phplist.com)\n";
+  $additional_headers .= "X-Mailer: SMTPclient 1.0-idec-system\n";
   $additional_headers .= "X-MessageID: systemmessage\n";
   if ($useremail)
     $additional_headers .= "X-User: ".$useremail."\n";
@@ -658,13 +660,13 @@ function system_messageHeaders($useremail = "") {
 }
 
 function logEvent($msg) {
-  
+
   $logged = false;
   foreach ($GLOBALS['plugins'] as $pluginname => $plugin) {
     $logged = $logged || $plugin->logEvent($msg);
   }
   if ($logged) return;
-  
+
   global $tables;
   if (isset($GLOBALS['page'])) {
     $p = $GLOBALS['page'];
@@ -697,7 +699,7 @@ function getPageLock($force = 0) {
   }
 #  cl_output('getting pagelock '.$thispage);
 #  ob_end_flush();
-  
+
   if ($GLOBALS["commandline"] && $thispage == 'processqueue') {
     if (is_object($GLOBALS['MC'])) {
       ## multi-send requires a valid memcached setup
@@ -708,7 +710,7 @@ function getPageLock($force = 0) {
   } else {
     $max = 1;
   }
-  
+
   ## allow killing other processes
   if ($force) {
     Sql_Query_Params("delete from ".$tables['sendprocess']." where page = ?",array($thispage));
@@ -768,13 +770,13 @@ function getPageLock($force = 0) {
   . '    (started, page, alive, ipaddress)'
   . ' values'
   . '    (current_timestamp, ?, 1, ?)';
-  
+
   if (!empty($GLOBALS['commandline'])) {
     $processIdentifier = SENDPROCESS_SERVERNAME.':'.getmypid();
   } else {
     $processIdentifier = $_SERVER['REMOTE_ADDR'];
   }
-  
+
   $res = Sql_Query_Params($query, array($thispage, $processIdentifier));
   $send_process_id = Sql_Insert_Id($tables['sendprocess'], 'id');
   $abort = ignore_user_abort(1);
@@ -834,7 +836,7 @@ function compressContent($content) {
 
   ## this needs loads more testing across systems to be sure
   return $content;
-  
+
   $content = preg_replace("/\n/",' ',$content);
   $content = preg_replace("/\r/",'',$content);
   $content = removeJavascript($content);
@@ -858,7 +860,7 @@ function encryptPass($pass) {
     } else {
       $algo = ENCRYPTION_ALGO;
     }
-    return hash($algo,$pass); 
+    return hash($algo,$pass);
   } else {
     return md5($pass);
   }
@@ -948,10 +950,10 @@ function testUrl($url) {
     curl_setopt($curl, CURLOPT_TIMEOUT, 10);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); 
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($curl, CURLOPT_HEADER, 0);
-    curl_setopt($curl, CURLOPT_DNS_USE_GLOBAL_CACHE, true); 
+    curl_setopt($curl, CURLOPT_DNS_USE_GLOBAL_CACHE, true);
     curl_setopt($curl, CURLOPT_USERAGENT,'phplist v'.VERSION.' (http://www.phplist.com)');
     $raw_result = curl_exec($curl);
     $code = curl_getinfo($curl,CURLINFO_HTTP_CODE);
@@ -963,7 +965,7 @@ function testUrl($url) {
     if (!PEAR::isError($headreq->sendRequest(false))) {
       $code = $headreq->getResponseCode();
     }
-  } 
+  }
   if (VERBOSE) logEvent('Checking '.$url.' => '.$code);
   return $code;
 }
@@ -974,7 +976,7 @@ function fetchUrl($url,$userdata = array()) {
 
   ## fix the Editor replacing & with &amp;
   $url = str_ireplace('&amp;','&',$url);
-  
+
  # logEvent("Fetching $url");
   if (sizeof($userdata)) {
     foreach ($userdata as $key => $val) {
@@ -987,7 +989,7 @@ function fetchUrl($url,$userdata = array()) {
   if (!isset($GLOBALS['urlcache'])) {
     $GLOBALS['urlcache'] = array();
   }
-  
+
   $url = expandUrl($url);
 #  print "<h1>Fetching ".$url."</h1>";
 
@@ -1042,12 +1044,12 @@ function fetchUrl($url,$userdata = array()) {
     if (VERBOSE) logEvent($url.' was cached in database');
     $content = $cache;
   }
-  
+
   if (!empty($content)) {
     $content = addAbsoluteResources($content,$url);
     logEvent('Fetching '.$url.' success');
     setPageCache($url,$lastmodified,$content);
-  
+
     $GLOBALS['urlcache'][$url] = array(
       'fetched' => time(),
       'content' => $content,
@@ -1063,10 +1065,10 @@ function fetchUrlCurl($url,$request_parameters) {
     curl_setopt($curl, CURLOPT_TIMEOUT, $request_parameters['timeout']);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); 
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($curl, CURLOPT_HEADER, 0);
-    curl_setopt($curl, CURLOPT_DNS_USE_GLOBAL_CACHE, true); 
+    curl_setopt($curl, CURLOPT_DNS_USE_GLOBAL_CACHE, true);
     curl_setopt($curl, CURLOPT_USERAGENT,'phplist v'.VERSION.'c (http://www.phplist.com)');
     $raw_result = curl_exec($curl);
     $status = curl_getinfo($curl,CURLINFO_HTTP_CODE);
@@ -1078,7 +1080,7 @@ function fetchUrlCurl($url,$request_parameters) {
 
 function fetchUrlPear($url,$request_parameters) {
   if (VERBOSE) logEvent($url.' fetching with PEAR');
-  
+
   if (0 && $GLOBALS['has_pear_http_request'] == 2) {
     $headreq = new HTTP_Request2($url,$request_parameters);
     $headreq->setHeader('User-Agent', 'phplist v'.VERSION.'p (http://www.phplist.com)');
@@ -1116,7 +1118,7 @@ function fetchUrlPear($url,$request_parameters) {
       if ($remote_charset != 'UTF-8' && function_exists('iconv')) {
         $content = iconv($remote_charset,'UTF-8//TRANSLIT',$content);
       }
-      
+
     } else {
       logEvent('Fetching '.$url.' failed on GET '.$req->getResponseCode());
       return 0;
@@ -1125,7 +1127,7 @@ function fetchUrlPear($url,$request_parameters) {
     logEvent('Fetching '.$url.' failed on HEAD');
     return 0;
   }
-  
+
   return $content;
 }
 
@@ -1148,7 +1150,7 @@ function parseQueryString($str) {
       }
     }
     return $op;
-} 
+}
 
 function cleanUrl($url,$disallowed_params = array('PHPSESSID')) {
   $parsed = @parse_url($url);
@@ -1330,10 +1332,23 @@ function matchedBounceRule($text,$activeonly = 0) {
   return '';
 }
 
+function match_text_cleaner($text) {
+	//limit to first x chars
+	if (LIMIT_ADVANCED_BODYLENGTH_REGEX) {
+		$text=substr($text,0,LIMIT_ADVANCED_BODYLENGTH_REGEX);
+	}
+
+	$text=preg_replace('/=[\n\r]+/','',$text);
+	$text=preg_replace('/[\n\r]+/m',' ',$text);
+	return $text;
+}
+
 function matchBounceRules($text,$rules = array()) {
   if (!sizeof($rules)) {
     $rules = loadBounceRules();
   }
+
+	$text=match_text_cleaner($text);
 
   foreach ($rules as $pattern => $rule) {
     $pattern = str_replace(' ','\s+',$pattern);
@@ -1370,7 +1385,7 @@ function flushClickTrackCache() {
 
 function resetMessageStatistics($messageid = 0) {
   ## remove the record of the links in the message, actual clicks of links, and the users sent to
-  
+
   Sql_Query(sprintf('delete from %s where messageid = %d',$GLOBALS['tables']['linktrack_ml'],$messageid));
   Sql_Query(sprintf('delete from %s where messageid = %d',$GLOBALS['tables']['linktrack_uml_click'],$messageid));
   Sql_Query(sprintf('delete from %s where messageid = %d',$GLOBALS['tables']['usermessage'],$messageid));
@@ -1461,13 +1476,13 @@ function verifyCsrfGetToken() {
   } elseif (isset($_SESSION['csrf_token'])) {
     print s('Error, incorrect session token');
     exit;
-  }  
+  }
 }
 
 function addCsrfGetToken() {
   if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = substr(md5(uniqid(mt_rand(), true)),rand(0,32),rand(0,32));
-  }  
+  }
   return '&tk='.$_SESSION['csrf_token'];
 }
 
@@ -1492,7 +1507,7 @@ function refreshTlds($force = 0) {
       $tlds = file_get_contents(dirname(__FILE__).'/data/tlds-alpha-by-domain.txt');
       $validated = true;
     }
-    
+
     if ($validated) {
       $lines = explode("\n",$tlds);
       $tld_list = '';
@@ -1523,10 +1538,10 @@ function listCategories() {
 
 /*
  * shortenTextDisplay
- * 
+ *
  * mostly used for columns in listings to retrict the width, particularly on mobile devices
  * it will show the full text as the title tip but restrict the size of the output
- * 
+ *
  * will also place a space after / and @ to facilitate wrapping in the browser
  */
 
@@ -1538,13 +1553,13 @@ function shortenTextDisplay($text,$max = 30) {
     } else {
       $display = substr($text,0,20).' ... '.substr($text,-10);
     }
-      
+
   } else {
     $display = $text;
   }
   $display = str_replace('/','/&#x200b;',$display);
   $display = str_replace('@','@&#x200b;',$display);
-  
+
   return sprintf('<span title="%s" ondblclick="alert(\'%s\');">%s</span>',htmlspecialchars($text),htmlspecialchars($text),$display);
 }
 
@@ -1560,20 +1575,20 @@ function getNiceBackTrace( $bTrace = false ) {
     $iMax = 3;
   }
   for($iIndex = $iMin; $iIndex < $iMax; $iIndex++){
-    
+
     if ( $bTrace ) {
-      $sTrace .= "\n"; 
+      $sTrace .= "\n";
     }
-    
+
     $sTrace .= $iIndex . sprintf("%s#%4d:%s() ",
       pad_right($aBackTrace[$iIndex]['file'], 30),
       $aBackTrace[$iIndex]['line'],
       pad_right($aBackTrace[$iIndex]['function'], 15)
     );
   }
-  
+
   return $sTrace;
-  
+
 }
 }
 if (!function_exists('pad_right')) {
@@ -1637,7 +1652,7 @@ function parsePlaceHolders($content,$array = array()) {
     #  print '<br/>'.$key.' '.$val.'<hr/>'.htmlspecialchars($content).'<hr/>';
       if (stripos($content,'['.$key.']') !== false) {
         $content = str_ireplace('['.$key.']',$val,$content);
-      } 
+      }
       if (preg_match('/\['.$key.'%%([^\]]+)\]/i',$content,$regs)) { ## @@todo, check for quoting */ etc
     #    var_dump($regs);
         if (!empty($val)) {
@@ -1646,7 +1661,7 @@ function parsePlaceHolders($content,$array = array()) {
           $content = str_ireplace($regs[0],$regs[1],$content);
         }
       }
-    } else { 
+    } else {
       $key = str_replace('/','\/',$key);
       if (preg_match('/\['.$key.'\]/i',$content,$match)) {
         $content = str_replace($match[0],$val,$content);
