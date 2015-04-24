@@ -815,6 +815,9 @@ define("STACKED_ATTRIBUTE_SELECTION",0);
 define('USE_ADVANCED_BOUNCEHANDLING',0);
 
 
+# Limit parsing of the bounced Email Body to the first 15000 chars
+define('LIMIT_ADVANCED_BODYLENGTH_REGEX',15000);
+
 # When forwarding ('to a friend') the message will be using the attributes of the destination email by default.
 # This often means the message gets stripped of al its attributes. 
 # When setting this constant to 1, the message will use the attributes of the forwarding user. It can be used
