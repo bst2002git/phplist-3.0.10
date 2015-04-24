@@ -15,6 +15,7 @@
     print ('<a id="login" href="./?page=home">Login</a> ');
   } else {
     print ('<a id="logout" href="./?page=logout">Logout</a>');
+    print ('&nbsp;<a id="username" href="#">'.$_SESSION['logindetails']['adminname'].'</a>');
   }
 ?>
 		</div>

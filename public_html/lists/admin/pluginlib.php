@@ -1,4 +1,5 @@
 <?php
+//error_reporting(-1); //chpock wennn problem mit plugins
 require_once dirname(__FILE__).'/accesscheck.php';
 
 $GLOBALS["plugins"] = array();

@@ -35,6 +35,7 @@ h1, h2, h3, h4, h5, h6, div.dropButton a,
 .configForm legend,  #globalhelp .content .text     { color:#666;}
 
 #login, #logout, .pagetitle                         { color:#AAA;}
+#username						{ color:#AAA;}
 
 #menuTop ul ul li a, #globalhelp .buttonhelp, 
 .firstinstallbutton                                 { color:#EEE !important;}
@@ -106,7 +107,7 @@ span.edit-list a.button                             { background-color:#DDD;}
 .panel .step-nav a.back                             { background-color:#666;}
 
 span#menu-button span:hover,a.action-button,
-#menuTop ul ul li, #menuTop ul li:hover, #logout,    
+#menuTop ul ul li, #menuTop ul li:hover, #logout    
 input.action-button                                 { background-color:#444;}
 
 #menuTop ul li a:hover                              { background-color:#444 !important;}
@@ -156,7 +157,7 @@ a.reset, a.confirm,#messagefilterform               { border-color:#CCC;}
 
 #login:hover, #logout:hover                         { border-color:#777;}
 
-#login, #logout, .block, .panel .step-nav a.next,
+#login, #logout, .block, .panel .step-nav a.next, #username,
 .panel .step-nav a.back,div.configEdit a.ajaxable   { border-color:#666;}
 
 #addtoqueue .missing, .note                         { border-color:#FDD845;}

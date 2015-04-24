@@ -791,6 +791,5 @@ class phplistPlugin {
     # see if a plugin is enabled, static method so it can be called even if existance of plugin is unknown.
     return array_key_exists($pluginName, $GLOBALS['plugins']) && $GLOBALS['plugins'][$pluginName]->enabled;
   }
-
 };
 ?>

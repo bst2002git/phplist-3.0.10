@@ -45,7 +45,9 @@ if (ALLOW_DELETEBOUNCE && isset($_GET['action']) && $_GET['action']) {
       Sql_Query(sprintf('delete from %s where comment != "not processed" and `date` < date_sub(now(),interval 2 month)',$tables["bounce"]));
       break;
     case "deleteall":
-      Sql_Query(sprintf('delete from %s',$tables["bounce"]));
+      //chpock
+      //Sql_Query(sprintf('delete from %s',$tables["bounce"]));
+      Sql_Query(sprintf('truncate %s',$tables["bounce"]));
       break;
     case "reset":
       Sql_Query(sprintf('update %s set bouncecount = 0',$tables["user"]));

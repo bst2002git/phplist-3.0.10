@@ -253,6 +253,7 @@ tr .listingname a:hover, tr .listingelement a:hover		{ text-decoration:none;}
 /* login/logout buttons */
 #logged													{ float:left; margin-top:15px; float:right;}
 #login, #logout											{ padding:2px 12px 4px 30px; border-width:1px; border-style:solid; -webkit-border-radius:15px; -moz-border-radius:15px; border-radius:15px;}
+#username											{ padding:2px 12px 4px 30px; border-width:1px; border-style:solid; -webkit-border-radius:15px; -moz-border-radius:15px; border-radius:15px;}
 #login													{ background:url('../../dressprow/images/32x32/login16x16-neg.png') 15% 50% no-repeat;}
 #logout													{ background:url('../../dressprow/images/32x32/logout16x16-neg.png') 12% 50% no-repeat;}
 #login:hover,#logout:hover								{ padding:2px 12px 4px 30px; border-width:1px; border-style:solid; -webkit-border-radius:15px; -moz-border-radius:15px; border-radius:15px; text-decoration:none;}

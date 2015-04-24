@@ -142,7 +142,7 @@ function SaveConfig($item,$value,$editable=1,$ignore_errors = 0) {
   ## to validate we need the actual values
   $value = str_ireplace('[domain]',$GLOBALS['domain'],$value);
   $value = str_ireplace('[website]',$GLOBALS['website'],$value);
-  
+ 
   switch ($configInfo['type']) {
     case 'boolean':
       if ($value == "false" || $value == "no") {
@@ -239,6 +239,13 @@ if (!TEST && REGISTER) {
     $PoweredBy = $PoweredByText;
   }
 }
+
+//chpock
+$PoweredByText='';
+$PoweredByImage='';
+$PoweredBy='';
+
+
 # some other configuration variables, which need less tweaking
 # number of users to show per page if there are more
 define ("MAX_USER_PP",50);

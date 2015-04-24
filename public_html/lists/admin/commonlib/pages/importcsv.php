@@ -28,7 +28,7 @@ $file_max_size = phpcfgsize2bytes(ini_get("upload_max_filesize"));
 
 if (($post_max_size < $file_max_size) && WARN_ABOUT_PHP_SETTINGS) {
   Warn(sprintf(s('The maximum POST size is smaller than the maximum upload filesize. If your upload file is too large, import will fail. See the PHP documentation at <a href="%s">%s</a>','http://php.net/post_max_size','http://php.net/post_max_size')));
-}  
+}
 
 require dirname(__FILE__) . "/../../structure.php";
 require dirname(__FILE__). '/../../importlib.php';
@@ -48,7 +48,7 @@ if (!empty ($_GET["reset"]) && $_GET["reset"] == "yes") {
        s('Are you sure you want to reset the import session?'),
        PageURL2("import2&reset=yes","reset",""),
        s('Reset Import session'));
-     
+
     print '<div class="fright">'.$button->show(). '</div>';
  # }
 }
@@ -57,40 +57,63 @@ if (isset ($_POST["import"])) {
     print Error(s('Invalid security token, please reload the page and try again'), 'http://resources.phplist.com/documentation/errors/securitytoken');
     return;
   }
-  
+
   $test_import = (isset ($_POST["import_test"]) && $_POST["import_test"] == "yes");
   $_SESSION["test_import"] = $test_import;
 
-  if (!$_FILES["import_file"]) {
-    Fatal_Error($GLOBALS['I18N']->get('File is either too large or does not exist.'));
-    return;
-  }
-  if (empty ($_FILES["import_file"])) {
-    Fatal_Error($GLOBALS['I18N']->get('No file was specified. Maybe the file is too big? '));
-    return;
-  }
-  
-  ## disallow some extensions. Won't avoid all problems, but will help with the most common ones.
-  $extension = strtolower(pathinfo($_FILES["import_file"]["name"], PATHINFO_EXTENSION));
-  if (in_array($extension, array('xls','ods','ots','fods', 'xlsx', 'xlt' , 'dif', 'dbf', 'html', 'slk'))) {
-    Fatal_Error(s('Please upload a plain text file only. You cannot use a spreadsheet. You need to export the data from the spreadsheet into a TAB delimited text file'));
-    return;
-  }
+	if (!isset ($_POST['local_import_file'])) {
 
-  if (!defined('IMPORT_FILESIZE')) {
-    define('IMPORT_FILESIZE',1);
-  }
-  if (!$GLOBALS['commandline'] && filesize($_FILES["import_file"]['tmp_name']) > (IMPORT_FILESIZE*1000000)) {
-    # if we allow more, we will certainly run out of memory
-    Fatal_Error($GLOBALS['I18N']->get('File too big, please split it up into smaller ones'));
-    return;
-  }
-/*
-  if (!preg_match("/^[0-9A-Za-z_\.\-\s \(\)]+$/", $_FILES["import_file"]["name"])) {
-    Fatal_Error($GLOBALS['I18N']->get('Use of wrong characters in filename, allowed are: ') . "0-9A-Za-z[SPACE]_.-()");
-    return;
-  }
-*/
+		if (!$_FILES["import_file"]) {
+		  Fatal_Error($GLOBALS['I18N']->get('File is either too large or does not exist.'));
+		  return;
+		}
+		if (empty ($_FILES["import_file"])) {
+		  Fatal_Error($GLOBALS['I18N']->get('No file was specified. Maybe the file is too big? '));
+		  return;
+		}
+
+		## disallow some extensions. Won't avoid all problems, but will help with the most common ones.
+		$extension = strtolower(pathinfo($_FILES["import_file"]["name"], PATHINFO_EXTENSION));
+		if (in_array($extension, array('xls','ods','ots','fods', 'xlsx', 'xlt' , 'dif', 'dbf', 'html', 'slk'))) {
+		  Fatal_Error(s('Please upload a plain text file only. You cannot use a spreadsheet. You need to export the data from the spreadsheet into a TAB delimited text file'));
+		  return;
+		}
+
+		if (!defined('IMPORT_FILESIZE')) {
+		  define('IMPORT_FILESIZE',1);
+		}
+		if (!$GLOBALS['commandline'] && filesize($_FILES["import_file"]['tmp_name']) > (IMPORT_FILESIZE*1000000)) {
+		  # if we allow more, we will certainly run out of memory
+		  Fatal_Error($GLOBALS['I18N']->get('File too big, please split it up into smaller ones'));
+		  return;
+		}
+		/*
+		  if (!preg_match("/^[0-9A-Za-z_\.\-\s \(\)]+$/", $_FILES["import_file"]["name"])) {
+		    Fatal_Error($GLOBALS['I18N']->get('Use of wrong characters in filename, allowed are: ') . "0-9A-Za-z[SPACE]_.-()");
+		    return;
+		  }
+		*/
+		  if ($_FILES["import_file"] && $_FILES["import_file"]['size'] > 10) {
+		#  $newfile = $GLOBALS['tmpdir'] . '/' . basename($_FILES['import_file']['name']) . time();
+		  $newfile = $GLOBALS['tmpdir'].'/'.'csvimport'.$GLOBALS['installation_name'].time();
+		  if (!$GLOBALS['commandline']) {
+		    move_uploaded_file($_FILES['import_file']['tmp_name'], $newfile);
+		  } else {
+		    copy($_FILES["import_file"]['tmp_name'], $newfile);
+		  }
+		  $_SESSION["import_file"] = $newfile;
+		  if (!($fp = fopen($newfile, "r"))) {
+		    Fatal_Error(sprintf($GLOBALS['I18N']->get('Cannot read %s. file is not readable !'), $newfile));
+		    return;
+		  }
+		  fclose($fp);
+		} elseif ($_FILES["import_file"]) {
+		  Fatal_Error($GLOBALS['I18N']->get('Something went wrong while uploading the file. Empty file received. Maybe the file is too big, or you have no permissions to read it.').' Filesize='.$_FILES["import_file"]['size']);
+		  return;
+		}
+	}	else {
+			$_SESSION["import_file"] = $_POST['local_import_file'];
+		}
 
   ## set notify to always "no". Confirmation should run through the first campaing
   $_POST['notify'] = 'no';
@@ -101,24 +124,7 @@ if (isset ($_POST["import"])) {
     $_SESSION["notify"] = $_POST["notify"];
   }
 
-  if ($_FILES["import_file"] && $_FILES["import_file"]['size'] > 10) {
-  #  $newfile = $GLOBALS['tmpdir'] . '/' . basename($_FILES['import_file']['name']) . time();
-    $newfile = $GLOBALS['tmpdir'].'/'.'csvimport'.$GLOBALS['installation_name'].time();
-    if (!$GLOBALS['commandline']) {
-      move_uploaded_file($_FILES['import_file']['tmp_name'], $newfile);
-    } else {
-      copy($_FILES["import_file"]['tmp_name'], $newfile);
-    }
-    $_SESSION["import_file"] = $newfile;
-    if (!($fp = fopen($newfile, "r"))) {
-      Fatal_Error(sprintf($GLOBALS['I18N']->get('Cannot read %s. file is not readable !'), $newfile));
-      return;
-    }
-    fclose($fp);
-  } elseif ($_FILES["import_file"]) {
-    Fatal_Error($GLOBALS['I18N']->get('Something went wrong while uploading the file. Empty file received. Maybe the file is too big, or you have no permissions to read it.'));
-    return;
-  }
+
   if (isset ($_POST["import_record_delimiter"]) && $_POST["import_record_delimiter"] != "") {
     $_SESSION["import_record_delimiter"] = $_POST["import_record_delimiter"];
   } else {
@@ -167,7 +173,7 @@ if (!empty($_SESSION["import_file"])) {
   }
   $email_list = file_get_contents($_SESSION["import_file"]);
   flush();
-  
+
   if (!isset($_SESSION['import_attribute'])) {
     $_SESSION['import_attribute'] = array();
   }
@@ -205,7 +211,7 @@ if (!empty($_SESSION["import_file"])) {
   $headers = explode($_SESSION["import_field_delimiter"], $header);
   $headers = array_unique($headers);
   $_SESSION['columnnames'] = $headers;
-  
+
   ## possibly rewrite "nice" header names to short ones
   foreach ($headers as $headerid => $headerline) {
     if (in_array(strtolower($headerline),array_keys($system_attributes_nicename))) {
@@ -221,13 +227,13 @@ if (!empty($_SESSION["import_file"])) {
   }
   $used_systemattr = array ();
   $used_attributes = array ();
-  
+
   if (isset($_SESSION["systemindex"])) {
     foreach ($_SESSION["systemindex"] as $system_att => $columnID) {
       $used_systemattr[] = strtolower($system_att);
     }
   }
-  
+
 #  var_dump($system_attributes);
   $system_attribute_reverse_map = array();
   for ($i = 0; $i < sizeof($headers); $i++) {
@@ -249,10 +255,10 @@ if (!empty($_SESSION["import_file"])) {
       $system_attribute_reverse_map[strtolower($column)] = $i;
       array_push($used_systemattr, strtolower($column));
 #      $dbg .= " =system";
-    }  elseif (strtolower($column) == "list membership" || 
+    }  elseif (strtolower($column) == "list membership" ||
       (isset($_POST['column' . $i]) && $_POST['column' . $i] == 'skip') ||
       in_array($column,array_keys($skip_system_attributes)) ||
-      in_array($column,array_values($skip_system_attributes)) 
+      in_array($column,array_values($skip_system_attributes))
       ) {
       ## skip was chosen or it's list membership, which we don't want to import since it's too complicated.
       $_SESSION["import_attribute"][$column] = array (
@@ -340,7 +346,7 @@ if (!empty($_SESSION["import_file"])) {
   ### use above selector for each unknown imported attribute
   $ls = new WebblerListing($GLOBALS['I18N']->get('Import Attributes'));
   $request_mapping = 0;
-# var_dump($_SESSION["import_attribute"]); 
+# var_dump($_SESSION["import_attribute"]);
 # var_dump($_SESSION["systemindex"]);
 # var_dump( $used_systemattr);
   foreach ($_SESSION["import_attribute"] as $column => $rec) {
@@ -383,7 +389,7 @@ if (!empty($_SESSION["test_import"])) {
   foreach ($_SESSION["systemindex"] as $column => $columnid) {
     $ls->addElement($_SESSION['columnnames'][$columnid]);
     $ls->addColumn($_SESSION['columnnames'][$columnid], $GLOBALS['I18N']->get('maps to'),'system: '.$column);
-  } 
+  }
   foreach ($_SESSION["import_attribute"] as $column => $rec) {
 
     if (trim($column) != '') {
@@ -406,7 +412,7 @@ if (!empty($_SESSION["test_import"])) {
  #var_dump($_SESSION["import_attribute"]);
 # print "SYSTEM INDEX";
 # var_dump($_SESSION["systemindex"]);
-  
+
   print '<h3>';
   printf($GLOBALS['I18N']->get('%d lines will be imported'), $total);
   print '</h3>';
@@ -419,7 +425,7 @@ if (!empty($_SESSION["test_import"])) {
   print '<div id="progresscount" style="width: 200; height: 50;">Progress</div>';
   print '<br/> <iframe id="import2" src="./?page=pageaction&action=import2&ajaxed=true'.addCsrfGetToken().'" scrolling="no" height="5" width="100"></iframe>';
   return;
-}  
+}
 
 #var_dump($system_attributes);
 ### show progress and adjust working space
@@ -438,7 +444,7 @@ if (sizeof($email_list)) {
   # print "A: ".sizeof($import_attribute);
   foreach ($system_attributes as $key => $val) {
     if (isset ($_SESSION["systemindex"][$key])) {
-      $system_attribute_mapping[$key] = $_SESSION["systemindex"][$key]; 
+      $system_attribute_mapping[$key] = $_SESSION["systemindex"][$key];
     }
   }
 
@@ -534,7 +540,7 @@ if (sizeof($email_list)) {
       $user["systemvalues"]["htmlemail"] = 1;
     }
     if ($_SESSION["test_import"]) {
-      
+
    #   var_dump($user["systemvalues"]);#exit;
       $html = '';
       foreach ($user["systemvalues"] as $column => $value) {
@@ -573,7 +579,7 @@ if (sizeof($email_list)) {
       if ($html) {
         print '<blockquote>' . $html . '</blockquote><hr />';
       }
-    } 
+    }
     if ($c > 50) {
       break;
     }
@@ -598,11 +604,11 @@ if (Sql_Table_Exists($tables["list"])) {
   if (isset($_GET['list'])) {
     $subselect .= sprintf( ' and id= %d',$_GET['list']);
   }
-  
+
   $result = Sql_query("SELECT id,name FROM " . $tables["list"] . " $subselect ORDER BY listorder");
   $c = 0;
   $some = Sql_Affected_Rows();
-  
+
   if ($some == 1) {
     $row = Sql_fetch_array($result);
     printf('<input type="hidden" name="listname[%d]" value="%s"><input type="hidden" name="lists[%d]" value="%d">%s <b>%s</b>', $c, stripslashes($row["name"]), $c, $row["id"], $GLOBALS['I18N']->get('Adding users to list'), stripslashes($row["name"]));
@@ -621,7 +627,7 @@ if (Sql_Table_Exists($tables["list"])) {
     } else {
 
       $selected_lists = getSelectedLists('lists');
-      
+
       print listSelectHTML($selected_lists,'lists',$subselect,s('Select the lists to add the emails to'));
     }
   }
@@ -651,7 +657,7 @@ if (defined('IN_WEBBLER') && Sql_Table_Exists("groups")) {
       $c++;
     }
   }
-  
+
   if (!empty($GLOBALS['config']['usergroup_types'])) {
     print '<p class="information">Select the default group membership type</p><select name="grouptype">';
     foreach ($GLOBALS['config']['usergroup_types'] as $ind => $val) {
@@ -659,7 +665,7 @@ if (defined('IN_WEBBLER') && Sql_Table_Exists("groups")) {
     }
     print '</select>';
   }
-  
+
 }
 ?>
 
@@ -673,6 +679,11 @@ if (defined('IN_WEBBLER') && Sql_Table_Exists("groups")) {
 </td><td><input type="file" name="import_file">
 <br/><?php printf($GLOBALS['I18N']->get('The following limits are set by your server:<br/>Maximum size of a total data sent to server: %s<br/>Maximum size of each individual file: %s'),ini_get("post_max_size"),ini_get("upload_max_filesize"));
 printf($GLOBALS['I18N']->get('phpList will not process files larger than %dMB'),IMPORT_FILESIZE);?>
+<br />
+by chpock:<br />
+echo "<p>DIR: <?=$csvUploadDir;?><br><select name="local_import_file" size="5"  style="width: 433px"><?foreach (glob($csvUploadDir."*.csv") as $filename) {echo "<option value='".$filename."'>".str_replace($csvUploadDir,'',$filename)." - Size: " . filesize($filename) . " - Date: ".date("d. M. Y: ",filectime($filename))."</option>";}?>
+    </select></p>
+<!-- end chpock //-->
 </td></tr>
 <tr><td><?php echo $GLOBALS['I18N']->get('Field Delimiter')?>:</td><td><input type="text" name="import_field_delimiter" size="5"> (<?php echo $GLOBALS['I18N']->get('default is TAB')?>)</td></tr>
 <!--tr><td><?php echo $GLOBALS['I18N']->get('Record Delimiter')?>:</td><td><input type="text" name="import_record_delimiter" size="5"> (<?php echo $GLOBALS['I18N']->get('default is line break')?>)</td></tr-->
